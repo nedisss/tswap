@@ -1,4 +1,4 @@
-import react from "react";
+import React from "react";
 
 function Earn() {
   return <div>Earn</div>;
