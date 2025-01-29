@@ -1,76 +1,45 @@
 import React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import money from "../assets/money.png";
-import friends from "../assets/friends.png";
-import daily from "../assets/daily.png";
-import blockchain from "../assets/blockchain.png";
-import home from "../assets/home.png";
+import { Link } from "react-router-dom";
+import homeIcon from "../assets/home.png"; // importuojame nuotrauką
+import airDropIcon from "../assets/AirDrop.png"; 
+import earnIcon from "../assets/money.png"; 
+import dailyIcon from "../assets/daily.png"; 
+import referralsIcon from "../assets/friends.png"; 
 
-function BottomNavigation() {
-    const navigate = useNavigate();
-    const location = useLocation();
-
+const BottomNavigation = () => {
     return (
-        <div style={styles.navbar}>
-            <button
-                style={location.pathname === "/" ? styles.active : styles.button}
-                onClick={() => navigate("/")}
-            >
-                <img src={home} alt="Home" style={styles.icon} />
-            </button>
-            <button
-                style={location.pathname === "/money" ? styles.active : styles.button}
-                onClick={() => navigate("/money")}
-            >
-                <img src={money} alt="Money" style={styles.icon} />
-            </button>
-            <button
-                style={location.pathname === "/friends" ? styles.active : styles.button}
-                onClick={() => navigate("/friends")}
-            >
-                <img src={friends} alt="Friends" style={styles.icon} />
-            </button>
-            <button
-                style={location.pathname === "/daily" ? styles.active : styles.button}
-                onClick={() => navigate("/daily")}
-            >
-                <img src={daily} alt="Daily" style={styles.icon} />
-            </button>
-            <button
-                style={location.pathname === "/blockchain" ? styles.active : styles.button}
-                onClick={() => navigate("/blockchain")}
-            >
-                <img src={blockchain} alt="Blockchain" style={styles.icon} />
-            </button>
+        <div className="flex justify-between p-2 bg-gray-800 text-white fixed bottom-0 w-full gap-x-1">
+            {/* Home mygtukas */}
+            <Link to="/" className="flex flex-col items-center transition-all duration-300 transform group hover:scale-110 hover:bg-blue-500 p-2 rounded-lg w-16">
+                <img src={homeIcon} alt="Home" className="w-8 h-8 mb-1 transition-all group-hover:scale-110" />
+                <span className="text-xs opacity-0 group-hover:opacity-100 transition-all">Home</span>
+            </Link>
+
+            {/* AirDrop mygtukas */}
+            <Link to="/airdrop" className="flex flex-col items-center transition-all duration-300 transform group hover:scale-110 hover:bg-blue-500 p-2 rounded-lg w-16">
+                <img src={airDropIcon} alt="AirDrop" className="w-8 h-8 mb-1 transition-all group-hover:scale-110" />
+                <span className="text-xs opacity-0 group-hover:opacity-100 transition-all">AirDrop</span>
+            </Link>
+
+            {/* Earn mygtukas */}
+            <Link to="/earn" className="flex flex-col items-center transition-all duration-300 transform group hover:scale-110 hover:bg-blue-500 p-2 rounded-lg w-16">
+                <img src={earnIcon} alt="Earn" className="w-8 h-8 mb-1 transition-all group-hover:scale-110" />
+                <span className="text-xs opacity-0 group-hover:opacity-100 transition-all">Earn</span>
+            </Link>
+
+            {/* Daily mygtukas */}
+            <Link to="/daily" className="flex flex-col items-center transition-all duration-300 transform group hover:scale-110 hover:bg-blue-500 p-2 rounded-lg w-16">
+                <img src={dailyIcon} alt="Daily" className="w-8 h-8 mb-1 transition-all group-hover:scale-110" />
+                <span className="text-xs opacity-0 group-hover:opacity-100 transition-all">Daily</span>
+            </Link>
+
+            {/* Referrals mygtukas */}
+            <Link to="/referrals" className="flex flex-col items-center transition-all duration-300 transform group hover:scale-110 hover:bg-blue-500 p-2 rounded-lg w-16">
+                <img src={referralsIcon} alt="Referrals" className="w-8 h-8 mb-1 transition-all group-hover:scale-110" />
+                <span className="text-xs opacity-0 group-hover:opacity-100 transition-all">Referrals</span>
+            </Link>
         </div>
     );
-}
-
-const styles = {
-    navbar: {
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        width: "100%",
-        display: "flex",
-        justifyContent: "space-around",
-        padding: "10px",
-        backgroundColor: "#333",
-    },
-    button: {
-        color: "#fff",
-        background: "none",
-        border: "none",
-        cursor: "pointer",
-    },
-    active: {
-        color: "yellow",
-        fontWeight: "bold",
-    },
-    icon: {
-        width: "30px",
-        height: "30px",
-    },
 };
 
 export default BottomNavigation;

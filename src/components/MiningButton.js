@@ -1,13 +1,11 @@
 import React from "react";
-import MiningButton from "../components/MiningButton";
 
-function Home() {
+const MiningButton = () => {
     return (
-        <div className="flex flex-col h-screen relative">
-            <div className="flex items-center justify-center mt-16">
-                <MiningButton />
-            </div>
-        </div>
+        <button className="bg-blue-500 text-white p-4 rounded-lg hover:bg-blue-700 transition duration-200">
+            Start Mining
+        </button>
     );
-}
-export default Home;
+};
+
+export default MiningButton;
