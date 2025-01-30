@@ -11,6 +11,7 @@ import BottomNavigation from "./components/BottomNavigation";
 function App() {
     const location = useLocation();
 
+    // Funkcija, kuri nustato pavadinimą pagal URL kelią
     const getPageTitle = () => {
         switch (location.pathname) {
             case "/":
@@ -31,13 +32,11 @@ function App() {
     return (
         <div className="flex flex-col h-screen">
             <Helmet>
-                <title>{getPageTitle()}</title>
+                <title>{getPageTitle()}</title> {/* Dinamiškai nustatome puslapio pavadinimą */}
             </Helmet>
-
             <header className="bg-gray-800 p-4 text-white text-center">
                 <h1>{getPageTitle()}</h1>
             </header>
-
             <Routes>
                 <Route path="/" element={<Home />} /> 
                 <Route path="/airdrop" element={<AirDrop />} /> 
@@ -45,7 +44,6 @@ function App() {
                 <Route path="/daily" element={<Daily />} /> 
                 <Route path="/referrals" element={<Referrals />} /> 
             </Routes>
-
             <BottomNavigation />
         </div>
     );

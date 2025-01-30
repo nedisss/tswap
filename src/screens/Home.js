@@ -1,3 +1,4 @@
+// src/screens/Home.js
 import React from "react";
 
 function Home() {

@@ -4,13 +4,14 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { Provider } from 'react-redux';
-import { store } from './app/store';
-import { HashRouter as Router } from 'react-router-dom';  // Pakeistas BrowserRouter į HashRouter
+import { store } from './app/store'; // Pakeistas importas į teisingą vietą
+import { BrowserRouter as Router } from 'react-router-dom';  // Importuojame BrowserRouter
 
+// Sukuriame root elementą ir apgaubiame App komponentą su Router
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(  
-  <Provider store={store}>
-    <Router>  {/* Naudojamas HashRouter */}
+root.render(
+  <Provider store={store}> 
+    <Router>  
       <App />
     </Router>
   </Provider>
