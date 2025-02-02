@@ -111,6 +111,15 @@ function MiningButton() {
         return new Intl.NumberFormat().format(number);
     };
 
+    // Add a check for user being null before rendering
+    if (!user) {
+        return (
+            <div>
+                <p>Loading user data...</p>
+            </div>
+        );
+    }
+
     return (
         <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
             {/* Button to show the mining table */}
