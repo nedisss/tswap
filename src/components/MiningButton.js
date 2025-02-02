@@ -31,14 +31,13 @@ function MiningButton() {
 
     // Effect to track mining time remaining
     useEffect(() => {
-        console.log('useEffect triggered');
+        console.log("useEffect ran", user); // Add a console log to check user data
         if (user && user.miningStartedTime && user.miningStartedTime.toMillis) {
             const checkTimeLeft = () => {
                 const now = Date.now();
                 const miningEndTime = user.miningStartedTime.toMillis() + MINING_DURATION;
                 const remainingTime = miningEndTime - now;
                 setTimeRemaining(remainingTime > 0 ? remainingTime : 0);
-                console.log(`Time remaining: ${remainingTime}`);
             };
             checkTimeLeft();
             const interval = setInterval(checkTimeLeft, 1000);
@@ -104,14 +103,13 @@ function MiningButton() {
 
     const handleHomeClick = () => {
         setShowMiningTable(true);  // Show the mining table
-        console.log("Home button clicked, showing mining table");
     };
 
     const formatNumber = (number) => {
         return new Intl.NumberFormat().format(number);
     };
 
-    // Add a check for user being null before rendering
+    // Check if user is available before rendering
     if (!user) {
         return (
             <div>
@@ -119,6 +117,9 @@ function MiningButton() {
             </div>
         );
     }
+
+    // Add debugging logs to verify the data
+    console.log("Rendering MiningButton", { user, timeRemaining, showMiningTable }); // Add log to verify rendering
 
     return (
         <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
@@ -182,13 +183,14 @@ function MiningButton() {
                 </div>
             )}
 
-            {/* Extra info block with balance */}
+            {/* Show balance and upgrade button */}
             <div className="relative w-full mx-4">
                 <div className="absolute -top-12 left-0 text-white text-lg bg-gray-800 p-2 rounded">
                     Balance: ₿ {formatNumber(userBalance)}
                 </div>
             </div>
-              
+
+            {/* Upgrade button */}
             {!showUpgrade && !user.isMining && (
                 <button
                     onClick={() => setShowUpgrade(true)}
@@ -203,8 +205,8 @@ function MiningButton() {
                 </button>
             )}
 
-            {/* Additional Block with Mining Status and Rate */}
-            <div className="bg-gray-800 p-4 rounded-lg w-full">
+            {/* Mining Status and Rate */}
+            <div className="bg-gray-800 p-4 rounded-lg w-full mt-4">
                 <div className="flex justify-between items-center mb-2">
                     <span className="text-white text-lg">
                         {(user.isMining && "Activated") || "Deactivated"}
