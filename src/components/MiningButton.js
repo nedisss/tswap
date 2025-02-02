@@ -24,6 +24,7 @@ function MiningButton() {
     const [timeRemaining, setTimeRemaining] = useState(null);
     const [claimedDisabled, setClaimedDisabled] = useState(false);
     const [showMiningTable, setShowMiningTable] = useState(false);  // Show the mining table
+    const [showUpgrade, setShowUpgrade] = useState(false);  // Track upgrade visibility
 
     const MAX_MINE_RATE = 100.0;
     const MINING_DURATION = 6 * 60 * 60 * 1000;  // 6 hours in milliseconds
