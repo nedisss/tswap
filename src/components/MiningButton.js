@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; 
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { selectUser } from "../features/userSlice";
 import { selectCalculated } from "../features/calculateSlice";
@@ -180,18 +180,18 @@ function MiningButton() {
             </div>
               
             {!showUpgrade && !user.isMining && (
-                    <button
-                        onClick={() => setShowUpgrade(true)}
-                        className={`absolute -top-3 right-0 text-xs text-black font-bold py-1 px-2 rounded ${
-                            calculate.canUpgrade
-                                ? "bg-green-600 hover:bg-green-700"
-                                : "bg-gray-400 cursor-not-allowed"
-                        }`}
-                        disabled={!calculate.canUpgrade}
-                    >
-                        {user.mineRate < MAX_MINE_RATE ? "Upgrade" : "Max Upgraded"}
-                    </button>
-                )}
+                <button
+                    onClick={() => setShowUpgrade(true)}
+                    className={`absolute -top-3 right-0 text-xs text-black font-bold py-1 px-2 rounded ${
+                        calculate.canUpgrade
+                            ? "bg-green-600 hover:bg-green-700"
+                            : "bg-gray-400 cursor-not-allowed"
+                    }`}
+                    disabled={!calculate.canUpgrade}
+                >
+                    {user.mineRate < MAX_MINE_RATE ? "Upgrade" : "Max Upgraded"}
+                </button>
+            )}
 
             {/* Additional Block with Mining Status and Rate */}
             <div className="bg-gray-800 p-4 rounded-lg w-full">
