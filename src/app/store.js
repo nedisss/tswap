@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import userReducer from "../features/userSlice"; 
+import userReducer, { setBalance } from "../features/userSlice"; 
 import messageReducer from "../features/messageSlice";
 import calculateReducer from "../features/calculateSlice";
 import coinShowReducer from "../features/coinShowSlice";

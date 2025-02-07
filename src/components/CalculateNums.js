@@ -3,86 +3,6 @@ import { selectUser } from "../features/userSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { setCalculated } from "../features/calculateSlice";
 
-// Skaičiavimo funkcijos
-const calculateProgress = (miningStartedTime) => {
-    const totalMiningTime = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-    const now = Date.now();
-    const elapsedTime = now - miningStartedTime;
-    if (elapsedTime >= totalMiningTime) {
-        return 100; // Mining is complete
-    }
-    return (elapsedTime / totalMiningTime) * 100;
-};
-
-const calculateMinedValue = (miningStartedTime, mineRate) => {
-    const totalMiningTime = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-    let elapsedTime = Date.now() - miningStartedTime;
-    elapsedTime = Math.round(elapsedTime / 1000) * 1000;
-
-    if (elapsedTime >= totalMiningTime) {
-        return mineRate * (totalMiningTime / 1000);
-    }
-
-    return mineRate * (elapsedTime / 1000);
-};
-
-const calculateRemainingTime = (miningStartedTime) => {
-    const totalMiningTime = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
-    const now = Date.now();
-    const endTime = miningStartedTime + totalMiningTime;
-    const remainingTime = Math.max(endTime - now, 0);
-
-    if (remainingTime === 0) {
-        return { hours: 0, minutes: 0, seconds: 0 };
-    }
-
-    const hours = Math.floor(remainingTime / (60 * 60 * 1000));
-    const minutes = Math.floor((remainingTime % (60 * 60 * 1000)) / (60 * 1000));
-    const seconds = Math.floor((remainingTime % (60 * 1000)) / 1000);
-
-    return { hours, minutes, seconds };
-};
-
-// Sukuriame Worker'į naudojant Blob
-const createWorker = () => {
-    const workerCode = `
-        onmessage = function(event) {
-            const { miningStartedTime, mineRate } = event.data;
-
-            const calculateProgress = ${calculateProgress.toString()};
-            const calculateMinedValue = ${calculateMinedValue.toString()};
-            const calculateRemainingTime = ${calculateRemainingTime.toString()};
-
-            const progress = calculateProgress(miningStartedTime);
-            const mined = calculateMinedValue(miningStartedTime, mineRate);
-            const remainingTime = calculateRemainingTime(miningStartedTime);
-
-            const canClaim = progress === 100;
-
-            postMessage({ progress, mined, remainingTime, canClaim });
-        };
-    `;
-
-    // Sukuriame Blob iš Worker kodo
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    return new Worker(URL.createObjectURL(blob));
-};
-
-// Naudoti Worker'į komponente
-const startMining = (miningStartedTime, mineRate) => {
-    const worker = createWorker();
-    return new Promise((resolve) => {
-        worker.onmessage = (event) => {
-            const { progress, mined, remainingTime, canClaim } = event.data;
-            resolve({ progress, mined, remainingTime, canClaim });
-            worker.terminate(); // Baigus darbą užbaigiame Worker'į
-        };
-
-        // Siunčiame pradines reikšmes Worker'ui
-        worker.postMessage({ miningStartedTime, mineRate });
-    });
-};
-
 function CalculateNums() {
     const dispatch = useDispatch();
     const user = useSelector(selectUser);
@@ -99,24 +19,56 @@ function CalculateNums() {
 
     const MAX_MINE_RATE = 100.0;
 
-    // Start mining funkcija
-    const startMiningProcess = () => {
-        setWaiting(false);
-        const miningStartedTime = Date.now();
-        dispatch(setCalculated({ miningStartedTime }));
+    const calculateProgress = (miningStartedTime) => {
+        if (!miningStartedTime) return 0;
+        const now = Date.now();
+        const totalMiningTime = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+        const elapsedTime = now - miningStartedTime;
 
-        // Pasikviečiame Worker'į
-        startMining(miningStartedTime, user.mineRate).then(({ progress, mined, remainingTime, canClaim }) => {
-            setProgress(progress);
-            setMined(mined);
-            setReminingTime(remainingTime);
-            setCanClaim(canClaim);
-        });
+        if (elapsedTime >= totalMiningTime) {
+            setCanClaim(true);
+            return 100; // Mining is complete
+        }
+        const progress = (elapsedTime / totalMiningTime) * 100;
+        return Math.min(Math.max(progress, 0), 100);
     };
 
-    const claimReward = () => {
-        dispatch(setCalculated({ balance: user.balance + mined }));
-        setCanClaim(false);
+    const calculateMinedValue = (miningStartedTime, mineRate) => {
+        const totalMiningTime = 6 * 60 * 60 * 1000;
+        let elapsedTime = Date.now() - miningStartedTime;
+        elapsedTime = Math.round(elapsedTime / 1000) * 1000;
+
+        if (elapsedTime >= totalMiningTime) {
+            return mineRate * (totalMiningTime / 1000);
+        }
+
+        const minedValue = mineRate * (elapsedTime / 1000);
+        return Math.round(minedValue * 1000) / 1000;
+    };
+
+    const calculateRemainingTime = (miningStartedTime) => {
+        if (!miningStartedTime) {
+            return { hours: 6, minutes: 0, seconds: 0 };
+        }
+        const now = Date.now();
+        const totalMiningTime = 6 * 60 * 60 * 1000;
+        const endTime = miningStartedTime + totalMiningTime;
+        const remainingTime = Math.max(endTime - now, 0);
+
+        if (remainingTime === 0) {
+            return { hours: 0, minutes: 0, seconds: 0 };
+        }
+
+        const hours = Math.floor(remainingTime / (60 * 60 * 1000));
+        const minutes = Math.floor(
+            (remainingTime % (60 * 60 * 1000)) / (60 * 1000)
+        );
+        const seconds = Math.floor((remainingTime % (60 * 1000)) / 1000);
+        return { hours, minutes, seconds };
+    };
+
+    const addPrecise = (a, b) => {
+        return parseFloat((a + b).toFixed(3));
     };
 
     const getUpgradeStep = (rate) => {
@@ -132,12 +84,85 @@ function CalculateNums() {
 
     const getNextUpgradeRate = () => {
         const step = getUpgradeStep(user.mineRate);
-        return Math.min(user.mineRate + step, MAX_MINE_RATE);
+        return Math.min(addPrecise(user.mineRate, step), MAX_MINE_RATE);
     };
 
     const canUpgrade =
         user.balance >= getUpgradePrice(getNextUpgradeRate()) &&
         user.mineRate < MAX_MINE_RATE;
+
+    useEffect(() => {
+        let worker = null;
+
+        const updateFunction = () => {
+            const updateProgress = () => {
+                const currentProgress = calculateProgress(user.miningStartedTime);
+                setProgress(currentProgress);
+            };
+
+            const updateMinedValue = () => {
+                const currentMinedValue = calculateMinedValue(
+                    user.miningStartedTime,
+                    user.mineRate
+                );
+
+                setMined(currentMinedValue);
+                setWaiting(false);
+            };
+
+            const updateRemainingTime = () => {
+                const timeLeft = calculateRemainingTime(user.miningStartedTime);
+                setReminingTime(timeLeft);
+
+                if (
+                    timeLeft.hours === 0 &&
+                    timeLeft.minutes === 0 &&
+                    timeLeft.seconds === 0
+                ) {
+                    setReminingTime({ hours: 0, minutes: 0, seconds: 0 });
+                }
+            };
+
+            updateProgress();
+            updateMinedValue();
+            updateRemainingTime();
+        };
+
+        if (user.isMining && user.miningStartedTime) {
+            const workerCode = `
+                let interval = null;
+                self.onmessage = function(e) {
+                    if (e.data === "start") {
+                        interval = setInterval(() => {
+                            self.postMessage("tick");
+                        }, 1000);
+                    } else if (e.data === "stop") {
+                        clearInterval(interval);
+                    }
+                };
+            `;
+
+            const blob = new Blob([workerCode], { type: "application/javascript" });
+            worker = new Worker(URL.createObjectURL(blob));
+
+            worker.onmessage = updateFunction;
+            worker.postMessage("start");
+        } else {
+            setProgress(0);
+            setMined(0);
+            setReminingTime({ hours: 6, minutes: 0, seconds: 0 });
+            setCanClaim(false);
+            setWaiting(false);
+        }
+
+        return () => {
+            if (worker) {
+                worker.postMessage("stop");
+                worker.terminate();
+            }
+        };
+    }, [user.isMining, user.miningStartedTime, user.mineRate]);
+
 
     useEffect(() => {
         if (!waiting) {
@@ -153,32 +178,7 @@ function CalculateNums() {
         }
     }, [waiting, mined, reminingTime, progress, canClaim, canUpgrade, dispatch]);
 
-    return (
-        <div>
-            <h2>Mining Progress</h2>
-            {waiting ? (
-                <button onClick={startMiningProcess}>Start Mining</button>
-            ) : (
-                <>
-                    <p>Progress: {progress}%</p>
-                    <p>Mined: {mined} units</p>
-                    <p>Time remaining: {reminingTime.hours}h {reminingTime.minutes}m {reminingTime.seconds}s</p>
-                    {canClaim && <button onClick={claimReward}>Claim Reward</button>}
-                </>
-            )}
-
-            <div>
-                <h3>Upgrade Info</h3>
-                <p>Next Upgrade Rate: {getNextUpgradeRate()}</p>
-                <p>Upgrade Cost: {getUpgradePrice(getNextUpgradeRate())}</p>
-                {canUpgrade && (
-                    <button onClick={() => dispatch(setCalculated({ mineRate: getNextUpgradeRate() }))}>
-                        Upgrade
-                    </button>
-                )}
-            </div>
-        </div>
-    );
+    return <></>;
 }
 
 export default CalculateNums;

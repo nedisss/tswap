@@ -5,12 +5,10 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.5.1",
     "@rollup/plugin-terser": "^0.4.4",
-    "autoprefixer": "^10.4.20",
     "clipboard-copy": "^4.0.1",
     "eslint": "^8.57.1",
     "eslint-config-react-app": "^7.0.1",
     "object-assign": "^4.1.1",
-    "postcss": "^8.5.1",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -19,10 +17,9 @@
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.1.4",
     "react-scripts": "^5.0.1",
-    "react-share": "^5.1.2",
+    "react-share": "^5.2.0",
     "react-toastify": "^11.0.3",
     "styled-components": "^6.1.14",
-    "tailwindcss": "^4.0.1",
     "web-vitals": "^4.2.4",
     "webpack": "^5.97.1",
     "workbox-webpack-plugin": "^7.3.0"
@@ -30,10 +27,13 @@
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@babel/plugin-transform-private-property-in-object": "^7.25.9",
+    "autoprefixer": "^10.4.20",
     "css-loader": "^7.1.2",
     "eslint-plugin-react": "^7.37.4",
     "gh-pages": "^6.3.0",
+    "postcss": "^8.5.1",
     "postcss-loader": "^8.1.1",
+    "tailwindcss": "^4.0.4",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.0"
   },

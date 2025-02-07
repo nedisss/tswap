@@ -1,27 +1,44 @@
 import React, { useState, useEffect } from "react";
-import "./coinanimation.css"; // Import the coin animation CSS
+import { useDispatch } from "react-redux";
+import { setCoinShow } from "../features/coinShowSlice";
+import "./CoinAnimation.css";
 
-const CoinAnimation = ({ trigger }) => {
-  const [isAnimating, setIsAnimating] = useState(false);
+const CoinAnimation = ({ showAnimation }) => {
+  const [coins, setCoins] = useState([]);
+  const dispatch = useDispatch();
 
-  // Trigger the animation when needed
   useEffect(() => {
-    if (trigger) {
-      setIsAnimating(true);
-      setTimeout(() => {
-        setIsAnimating(false);  // Reset after animation completes
-      }, 1500);  // Match the duration of the animation
+    if (showAnimation) {
+      const newCoins = Array.from({ length: 70 }, (_, i) => ({
+        id: i,
+        left: `${Math.random() * 100}%`,
+        delay: `${Math.random() * 1.4}s`,
+      }));
+      setCoins(newCoins);
+
+      const timer = setTimeout(() => {
+        dispatch(setCoinShow(false));
+        setCoins([]);
+      }, 3000);
+
+      return () => clearTimeout(timer);
     }
-  }, [trigger]);
+  }, [showAnimation, dispatch]);
 
   return (
-    isAnimating && (
-      <div className="coin-animation-container">
-        <div className="coin-overplay">
-          <div className="coin"></div> {/* The coin will be represented by a div with a gold background */}
-        </div>
-      </div>
-    )
+    <div className="coin-animation-container">
+      {showAnimation && (
+        <div className="coin-overlay">
+          {coins.map((coin) => (
+            <div
+            key={coin.id}
+            className="coin"
+            style={{ left: coin.left, animationDelay: coin.delay }}
+            />
+          ))}
+         </div>
+      )}
+    </div>
   );
 };
 

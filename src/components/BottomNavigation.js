@@ -5,6 +5,7 @@ import airDropIcon from "../assets/AirDrop.png";
 import earnIcon from "../assets/money.png";
 import dailyIcon from "../assets/daily.png";
 import referralsIcon from "../assets/friends.png";
+import blockchain from "../assets/blockchain.png";
 
 // Common styles for each Link item
 const navItemStyles = "flex flex-col items-center transition-all duration-300 transform group hover:scale-110 hover:bg-blue-500 p-2 rounded-lg w-16";

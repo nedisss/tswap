@@ -1,221 +1,308 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useState } from "react";
 import { selectUser } from "../features/userSlice";
-import { selectCalculated } from "../features/calculateSlice";
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { useDispatch, useSelector } from "react-redux";
+import {
+    doc,
+    getDoc,
+    serverTimestamp,
+    setDoc,
+    updateDoc,
+} from "firebase/firestore";
 import { db } from "../firebase";
+import { selectCalculated } from "../features/calculateSlice";
 import { setShowMessage } from "../features/messageSlice";
 import { setCoinShow } from "../features/coinShowSlice";
 
-// Define the calculateMinedValue function
-const calculateMinedValue = (miningStartedTime, maxMineRate) => {
-    const elapsedTime = Date.now() - miningStartedTime;
-    const elapsedHours = elapsedTime / (1000 * 60 * 60); // convert to hours
-    const minedValue = Math.min(maxMineRate * elapsedHours, maxMineRate);
-    return minedValue.toFixed(2); // returns a value rounded to 2 decimal places
-};
-
 function MiningButton() {
     const dispatch = useDispatch();
+
     const user = useSelector(selectUser);
     const calculate = useSelector(selectCalculated);
 
-    const [userBalance, setUserBalance] = useState(user?.coins || 0);
-    const [timeRemaining, setTimeRemaining] = useState(null);
-    const [claimedDisabled, setClaimedDisabled] = useState(false);
-    const [showMiningTable, setShowMiningTable] = useState(false);  // Show the mining table
-    const [showUpgrade, setShowUpgrade] = useState(false);  // Track upgrade visibility
+    const [showUpgrade, setShowUpgrade] = useState(false);
+    const [claimDisabled, setClaimDisabled] = useState(false);
 
     const MAX_MINE_RATE = 100.0;
-    const MINING_DURATION = 6 * 60 * 60 * 1000;  // 6 hours in milliseconds
 
-    // Effect to track mining time remaining
-    useEffect(() => {
-        console.log("useEffect ran", user); // Add a console log to check user data
-        if (user && user.miningStartedTime && user.miningStartedTime.toMillis) {
-            const checkTimeLeft = () => {
-                const now = Date.now();
-                const miningEndTime = user.miningStartedTime.toMillis() + MINING_DURATION;
-                const remainingTime = miningEndTime - now;
-                setTimeRemaining(remainingTime > 0 ? remainingTime : 0);
-            };
-            checkTimeLeft();
-            const interval = setInterval(checkTimeLeft, 1000);
-            return () => clearInterval(interval);
+    const calculateMinedValue = (miningStartedTime, mineRate) => {
+        if (!miningStartedTime || !mineRate) return 0;
+
+        const now = Date.now();
+        const totalMiningTime = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+        let elapsedTime = now - miningStartedTime;
+
+        elapsedTime = Math.round(elapsedTime / 1000) * 1000;
+
+        if (elapsedTime >= totalMiningTime) {
+            // Mining is complete, return maximum possible mined value
+            return mineRate * (totalMiningTime / 1000);
         }
-    }, [user]);
+
+        // Calculate mined value based on elapsed time
+        const minedValue = mineRate * (elapsedTime / 1000);
+
+        // Round to 3 decimal places to avoid floating point precision issues
+        return Math.round(minedValue * 1000) / 1000;
+    };
 
     const startFarming = async () => {
-        if (!user) {
-            console.error("User not available");
-            dispatch(setShowMessage({ message: "User data not available", color: "red" }));
-            return;
-        }
-
         try {
-            dispatch(setShowMessage({ message: "Mining is starting...", color: "purple" }));
-            const userRef = doc(db, "users", user.id);
-            await updateDoc(userRef, {
+            dispatch(
+                setShowMessage({
+                    message: "Mining is starting...",
+                    color: "blue",
+                })
+            );
+            await updateDoc(doc(db, "users", user.uid), {
                 isMining: true,
                 miningStartedTime: serverTimestamp(),
             });
-
-            dispatch(setCoinShow(true));
-            dispatch(setShowMessage({ message: "Mining started!", color: "green" }));
         } catch (error) {
             console.error("Error starting farming:", error);
-            dispatch(setShowMessage({ message: "Error! Please try again!", color: "red" }));
+            dispatch(
+                setShowMessage({
+                    message: "Error. Please try again!",
+                    color: "red",
+                })
+            );
         }
     };
 
     const claimRewards = async () => {
-        if (!user) {
-            console.error("User not available");
-            dispatch(setShowMessage({ message: "User data not available", color: "red" }));
-            return;
-        }
-
         try {
-            if (timeRemaining === null || timeRemaining > 0) {
-                dispatch(setShowMessage({ message: `You need to wait ${Math.ceil(timeRemaining / 60000)} minutes!`, color: "red" }));
-                return;
+            dispatch(
+                setShowMessage({
+                    message: "Claiming coins in progress...",
+                    color: "green",
+                })
+            );
+            setClaimDisabled(true);
+
+            // Get the current server timestamp
+            const getServerTime = async (db, userId) => {
+                await updateDoc(doc(db, "users", userId), {
+                    time: serverTimestamp(),
+                });
+
+                const checkTime = async () => {
+                    const docSnap = await getDoc(doc(db, "users", userId));
+                    const serverTime = docSnap.data()?.time;
+
+                    if (serverTime) {
+                        return serverTime;
+                    } else {
+                        return new Promise((resolve) => {
+                            setTimeout(() => resolve(checkTime()), 1000);
+                        });
+                    }
+                };
+
+                return checkTime();
+            };
+
+            // Usage
+            const serverNow = await getServerTime(db, user.uid);
+
+            // Calculate the time difference in milliseconds
+            const timeDifference = serverNow.toMillis() - user.miningStartedTime;
+
+            // Check if 6 hours (21600000 milliseconds) have passed
+            if (timeDifference >= 21600000) {
+                dispatch(setCoinShow(true));
+
+                const minedAmount = calculateMinedValue(
+                    user.miningStartedTime,
+                    user.mineRate,
+                    serverNow
+                );
+                console.log("Mined amount:", minedAmount);
+
+                const newBalance = Number((user.balance + minedAmount).toFixed(2));
+
+                await updateDoc(doc(db, "users", user.uid), {
+                    balance: newBalance,
+                    isMining: false,
+                    miningStartedTime: null,
+                });
+
+                if (user.referredBy) {
+                    const referralBonus = Number((minedAmount * 0.1).toFixed(2));
+                    const referrerDoc = doc(db, "users", user.referredBy);
+                    const referrerSnapshot = await getDoc(referrerDoc);
+
+                    if (referrerSnapshot.exists()) {
+                        const referrerBalance = referrerSnapshot.data().balance;
+                        const referrerAddedValue =
+                            referrerSnapshot.data().referrals[user.uid].addedValue;
+                        const updatedBalance = Number(
+                            (referrerBalance + referralBonus).toFixed(2)
+                        );
+                        const updatedAddedValue = Number(
+                            (referrerAddedValue + referralBonus).toFixed(2)
+                        );
+
+                        await setDoc(
+                            referrerDoc,
+                            {
+                                referrals: {
+                                    [user.uid]: {
+                                        addedValue: updatedAddedValue,
+                                    },
+                                },
+                                balance: updatedBalance,
+                            },
+                            { merge: true }
+                        );
+                    }
+                }
+                setClaimDisabled(false);
+            } else {
+                console.log("Not enough time has passed to claim rewards");
+                // Optionally, you can show a message to the user
+                dispatch(
+                    setShowMessage({
+                        message: "Error. Please try again!",
+                        color: "red",
+                    })
+                );
             }
-
-            dispatch(setShowMessage({ message: "Claiming coins in progress...", color: "green" }));
-            setClaimedDisabled(true);
-
-            const minedCoins = calculateMinedValue(user.miningStartedTime.toMillis(), MAX_MINE_RATE);
-
-            await updateDoc(doc(db, "users", user.id), {
-                coins: user.coins + parseFloat(minedCoins),
-                isMining: false,
-            });
-
-            setUserBalance(user.coins + parseFloat(minedCoins));
-            dispatch(setShowMessage({ message: `You claimed ${minedCoins} coins!`, color: "gold" }));
-            setClaimedDisabled(false);
         } catch (error) {
-            console.error("Error claiming rewards:", error);
-            dispatch(setShowMessage({ message: "Error! Please try again!", color: "red" }));
-            setClaimedDisabled(false);
+            console.log("Error claiming rewards", error);
+            dispatch(
+                setShowMessage({
+                    message: "Error. Please try again!",
+                    color: "red",
+                })
+            );
+            dispatch(setCoinShow(false));
+            setClaimDisabled(false);
         }
     };
 
-    const handleHomeClick = () => {
-        setShowMiningTable(true);  // Show the mining table
+    const showUpgradeMinerate = async () => {
+        try {
+            dispatch(
+                setShowMessage({
+                    message: "Upgrading in progress...",
+                    color: "blue",
+                })
+            );
+
+            const nexRate = Math.min(
+                addPrecise(user.mineRate, getUpgradeStep(user.mineRate)),
+                MAX_MINE_RATE
+            );
+            const price = getUpgradePrice(getNextUpgradeRate());
+            const newBalance = Number((user.balance - price).toFixed(2));
+
+            setShowUpgrade(false);
+
+            if (user.balance >= price) {
+                await updateDoc(doc(db, "users", user.uid), {
+                    balance: newBalance,
+                    mineRate: nexRate,
+                });
+            }
+        } catch (error) {
+            console.error("Error upgrading mine rate:", error);
+            dispatch(
+                setShowMessage({
+                    message: "Error. Please try again!",
+                    color: "red",
+                })
+            );
+        }
     };
 
-    const formatNumber = (number) => {
-        return new Intl.NumberFormat().format(number);
+    const addPrecise = (a, b) => {
+        return parseFloat((a + b).toFixed(3));
     };
 
-    // Check if user is available before rendering
-    if (!user) {
-        return (
-            <div>
-                <p>Loading user data...</p>
-            </div>
-        );
-    }
+    const formatNumber = (num) => {
+        // Convert the number to a string with a fixed number of decimal places
+        let numStr = num.toFixed(3);
 
-    // Add debugging logs to verify the data
-    console.log("Rendering MiningButton", { user, timeRemaining, showMiningTable }); // Add log to verify rendering
+        // Split the number into integer and decimal parts
+        let [intPart, decPart] = numStr.split(".");
+
+        // Add thousand separators to the integer part
+        intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+        // If the number is less than 0.01, keep 3 decimal places
+        if (num < 0.01) {
+            return `${intPart},${decPart}`;
+        }
+
+        // For other numbers, keep 2 decimal places
+        decPart = decPart.slice(0, 2);
+
+        // Always return the formatted number with 2 decimal places
+        return `${intPart},${decPart}`;
+    };
+
+    const getUpgradeStep = (rate) => {
+        if (rate < 0.01) return 0.001;
+        if (rate < 0.1) return 0.01;
+        if (rate < 1) return 0.1;
+        return Math.pow(10, Math.floor(Math.log10(rate)));
+    };
+
+    const getUpgradePrice = (nexRate) => {
+        return nexRate * 100000;
+    };
+
+    const getNextUpgradeRate = () => {
+        const step = getUpgradeStep(user.mineRate);
+        return Math.min(addPrecise(user.mineRate, step), MAX_MINE_RATE);
+    };
 
     return (
-        <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-            {/* Button to show the mining table */}
-            <button onClick={handleHomeClick} style={{ marginBottom: "20px" }}>
-                Show Mining Table
-            </button>
-
-            {/* Mining Table Section - Only appears when clicking Home */}
-            {showMiningTable && (
-                <div style={{
-                    padding: "20px",
-                    backgroundColor: "#f1f1f1",  // Light gray background
-                    borderRadius: "8px",
-                    boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
-                    maxWidth: "600px",  // Center the content
-                    margin: "0 auto",
-                }}>
-                    {/* Balance Section */}
-                    <div style={{ fontSize: "18px", fontWeight: "bold" }}>
-                        Balance: {formatNumber(userBalance)} coins
-                    </div>
-
-                    {/* Mining Status Section */}
-                    <div style={{
-                        backgroundColor: "#e0e0e0", // Light gray background for mining status
-                        padding: "10px",
-                        marginTop: "10px",
-                        borderRadius: "5px",
-                    }}>
-                        <div style={{ fontSize: "16px", fontWeight: "bold" }}>
-                            Mining Status: {user.isMining ? "Active" : "Inactive"}
-                        </div>
-                        <div style={{ fontSize: "14px", color: "#555" }}>
-                            Mined: {user.miningStartedTime ? calculateMinedValue(user.miningStartedTime.toMillis(), MAX_MINE_RATE) : 0} coins
-                        </div>
-                        
-                        {/* Time remaining section */}
-                        <div style={{ marginTop: "10px", backgroundColor: "#bbb", height: "5px", borderRadius: "3px" }}>
-                            <div style={{
-                                backgroundColor: "#4caf50",
-                                width: `${(timeRemaining / MINING_DURATION) * 100}%`,
-                                height: "100%",
-                                borderRadius: "3px"
-                            }}></div>
-                        </div>
-                        <div style={{ fontSize: "12px", marginTop: "5px", color: "#777" }}>
-                            Time remaining: {timeRemaining > 0 ? Math.ceil(timeRemaining / 60000) + " minutes" : "Mining completed"}
-                        </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div style={{ marginTop: "20px" }}>
-                        <button onClick={startFarming} disabled={claimedDisabled}>
-                            {user.isMining ? "Mining in progress..." : "Start Mining"}
-                        </button>
-                        <button onClick={claimRewards} disabled={claimedDisabled || timeRemaining > 0}>
-                            Claim Rewards
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Show balance and upgrade button */}
-            <div className="relative w-full mx-4">
-                <div className="absolute -top-12 left-0 text-white text-lg bg-gray-800 p-2 rounded">
-                    Balance: ₿ {formatNumber(userBalance)}
-                </div>
+        <div className="relative w-full mx-4">
+            <div className="absolute -top-12 left-0 text-white text-lg bg-gray-800 p-2 rounded">
+                Balance: ₿ {formatNumber(user.balance)}
             </div>
 
-            {/* Upgrade button */}
             {!showUpgrade && !user.isMining && (
                 <button
                     onClick={() => setShowUpgrade(true)}
                     className={`absolute -top-3 right-0 text-xs text-black font-bold py-1 px-2 rounded ${
-                        calculate.canUpgrade
+                        calculate && calculate.canUpgrade
                             ? "bg-green-600 hover:bg-green-700"
                             : "bg-gray-400 cursor-not-allowed"
                     }`}
-                    disabled={!calculate.canUpgrade}
+                    disabled={!calculate || !calculate.canUpgrade}
                 >
                     {user.mineRate < MAX_MINE_RATE ? "Upgrade" : "Max Upgraded"}
                 </button>
             )}
 
-            {/* Mining Status and Rate */}
-            <div className="bg-gray-800 p-4 rounded-lg w-full mt-4">
-                <div className="flex justify-between items-center mb-2">
-                    <span className="text-white text-lg">
-                        {(user.isMining && "Activated") || "Deactivated"}
-                    </span>
-                    <div className="text-white">
-                        <span className="text-sm">{formatNumber(user.mineRate)} ₿/s</span>
-                    </div>
+            {showUpgrade && (
+                <div className="absolute -bottom-[130px] left-0 w-full bg-gray-900 p-4 rounded-lg transform transition-all duration-300 ease-in-out">
+                    {user.mineRate < MAX_MINE_RATE ? (
+                        <div>
+                            <p className="text-white mb-2 -mt-2 text-center">
+                                Upgrade to {formatNumber(getNextUpgradeRate())} ₿/s
+                            </p>
+                            <button
+                                onClick={showUpgradeMinerate}
+                                className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded"
+                            >
+                                Cost: ₿ {formatNumber(getUpgradePrice(getNextUpgradeRate()))}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="text-white text-center font-bold py-2">
+                            Maximum Upgrade reached!
+                        </div>
+                    )}
+                    <button
+                        onClick={() => setShowUpgrade(false)}
+                        className="w-full mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+                    >
+                        Close
+                    </button>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

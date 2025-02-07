@@ -1,54 +1,31 @@
 import React from "react";
-import styled, { keyframes } from "styled-components";
 
-// Sukuriame CSS su styled-components
-const LoadingModuleWrapper = styled.div`
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);  /* Pusiau permatomas fonas */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-`;
-
-const LoadingContent = styled.div`
-    text-align: center;
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
-`;
-
-// Sukuriame animacijos efektą
-const spin = keyframes`
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-`;
-
-const Loader = styled.div`
-    border: 8px solid #f3f3f3; /* Šviesus pilkas fonas */
-    border-top: 8px solid ${(props) => props.color || "#3498db"};  /* Mėlyna spalva arba pagal prop */
-    border-radius: 50%;
-    width: ${(props) => props.size || "50px"}; /* Dydis pagal prop */
-    height: ${(props) => props.size || "50px"}; /* Dydis pagal prop */
-    animation: ${spin} 1s linear infinite;
-`;
-
-const LoadingModule = ({ isLoading, size, color }) => {
-    if (!isLoading) return null;
-
+function LoadingModul({ size, theme }) {
     return (
-        <LoadingModuleWrapper>
-            <LoadingContent>
-                <Loader size={size} color={color} />
-                <p>Loading... Please wait.</p>
-            </LoadingContent>
-        </LoadingModuleWrapper>
+        <>
+        <svg
+            style={{ height: size, width: size }}
+            aria-hidden="true"
+            className={`${
+                theme === "light"
+                ? "text-gray-200 dark:text-gray-600"
+                : "dark:text-gray-600 text-white"
+            } animate-spin fill-black`}
+            viewBox="0 0 100 101"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+        <path
+        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9765 22.3858 0.59082 50 0.59082"
+        fill="currentColor"
+        />
+        <path
+        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.007 33.4852C95.0512 27.7086 91.5139 22.626 86.8726 18.7336C82.2312 14.8412 76.6676 12.2558 70.7895 11.2217C64.9114 10.1876 58.9556 10.7355 53.3636 12.8197C47.7715 14.9039 42.7462 18.4615 38.7605 23.1831"
+        fill="currentFill"
+        />
+        </svg>
+      </>
     );
 };
 
-export default LoadingModule;
+export default LoadingModul;

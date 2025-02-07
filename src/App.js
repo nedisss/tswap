@@ -1,10 +1,9 @@
-import React, { useEffect, useState, useCallback } from "react";
-import './App.css';  // teisingas pavadinimas
+import React, { useEffect, useState, useCallback } from 'react';
+import './App.css';
 import { db } from "./firebase";
 import {
     collection,
     doc,
-    getDoc,
     getDocs,
     limit,
     onSnapshot,
@@ -13,26 +12,25 @@ import {
     setDoc,
 } from "firebase/firestore";
 import { selectUser, setUser } from "./features/userSlice";
-import { BrowserRouter as Router, Route, Routes, Link, useLocation } from "react-router-dom";
-import CalculateNums from "./components/CalculateNums";
-import CoinAnimation from "./components/CoinAnimation";
+import { useDispatch, useSelector } from "react-redux";
 import { selectShowMessage, setShowMessage } from "./features/messageSlice";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { selectCoinShow } from "./features/coinShowSlice";
 import { setTopUsers } from "./features/topUsersSlice";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Home from "./screens/Home";
+import AirDrop from "./screens/AirDrop";
+import Earn from "./screens/Earn";
+import Daily from "./screens/Daily";
+import Referrals from "./screens/Referrals";
+import BottomNavigation from "./components/BottomNavigation";
 import Loading from "./screens/Loading";
-import { Helmet } from "react-helmet"; 
-import Home from "./screens/Home"; 
-import AirDrop from "./screens/AirDrop";  
-import Earn from "./screens/Earn";  
-import Daily from "./screens/Daily";  
-import Referrals from "./screens/Referrals";  
-import BottomNavigation from "./components/BottomNavigation"; 
-import { useDispatch, useSelector } from "react-redux";
-
-// Importing the MiningButton component
-import MiningButton from "./components/MiningButton";
+import CalculateNums from "./components/CalculateNums";
+import CoinAnimation from "./components/CoinAnimation";
+import MiningButton from "./components/MiningButton";  // Importing the new MiningButton component
+import { selectCalculated } from './features/calculateSlice';
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 function App() {
     const dispatch = useDispatch();
@@ -40,17 +38,14 @@ function App() {
     const message = useSelector(selectShowMessage);
     const coinShow = useSelector(selectCoinShow);
 
-    const [webAppData, setWebAppData] = useState({
+    const [webApp, setWebApp] = useState({
         id: null,
-        firstname: "",
-        lastname: "",
+        firstName: "",
+        lastName: "",
         username: "",
         languageCode: "en",
     });
 
-    const [WebApp, setWebApp] = useState(null);
-
-    // Function to process links data
     const processLinks = (links) => {
         if (!links) return {};
         return Object.entries(links).reduce((acc, [key, value]) => {
@@ -62,46 +57,45 @@ function App() {
         }, {});
     };
 
-    // Fetch user from Firestore
     const getUser = useCallback(() => {
-        const unsub = onSnapshot(doc(db, "users", webAppData.id), async (docsnap) => {
-            if (docsnap.exists()) {
-                dispatch(
-                    setUser({
-                        uid: webAppData.id,
-                        userImage: docsnap.data().userImage,
-                        firstname: docsnap.data().firstname,
-                        lastname: docsnap.data().lastname,
-                        username: docsnap.data().username,
-                        languageCode: docsnap.data().languageCode,
-                        referrals: docsnap.data().referrals,
-                        referredBy: docsnap.data().referredBy,
-                        isPremium: docsnap.data().isPremium,
-                        balance: docsnap.data().balance,
-                        mineRate: docsnap.data().mineRate,
-                        isMining: docsnap.data().isMining,
-                        miningStartedTime: docsnap.data().miningStartedTime
-                            ? docsnap.data().miningStartedTime.toMillis()
+        if (!webApp.id) return;
+
+        const unsub = onSnapshot(doc(db, "users", webApp.id), async (docSnap) => {
+            if (docSnap.exists()) {
+                dispatch(setUser({
+                    uid: webApp.id,
+                    userImage: docSnap.data().userImage,
+                    firstName: docSnap.data().firstName,
+                    lastName: docSnap.data().lastName,
+                    username: docSnap.data().username,
+                    languageCode: docSnap.data().languageCode,
+                    referrals: docSnap.data().referrals,
+                    referredBy: docSnap.data().referredBy,
+                    isPremium: docSnap.data().isPremium,
+                    balance: docSnap.data().balance,
+                    mineRate: docSnap.data().mineRate,
+                    isMining: docSnap.data().isMining,
+                    miningStartedTime: docSnap.data().miningStartedTime
+                        ? docSnap.data().miningStartedTime.toMillis()
+                        : null,
+                    daily: {
+                        claimedTime: docSnap.data().daily.claimedTime
+                            ? docSnap.data().daily.claimedTime.toMillis()
                             : null,
-                        daily: {
-                            claimedTime: docsnap.data().daily.claimedTime
-                                ? docsnap.data().daily.claimedTime.toMillis()
-                                : null,
-                            claimedDay: docsnap.data().daily.claimedDay,
-                        },
-                        links: processLinks(docsnap.data().links),
-                    })
-                );
+                        claimedDay: docSnap.data().daily.claimedDay,
+                    },
+                    links: processLinks(docSnap.data().links),
+                }));
             } else {
-                await setDoc(doc(db, "users", webAppData.id), {
-                    firstName: webAppData.firstname,
-                    lastName: webAppData.lastname || null,
-                    username: webAppData.username || null,
-                    languageCode: webAppData.languageCode,
+                await setDoc(doc(db, "users", webApp.id), {
+                    firstName: webApp.firstName,
+                    lastName: webApp.lastName || null,
+                    username: webApp.username || null,
+                    languageCode: webApp.languageCode,
                     referrals: {},
                     referredBy: null,
                     balance: 0,
-                    mineRate: 0.01,
+                    mineRate: 0.001,
                     isMining: false,
                     miningStartedTime: null,
                     daily: {
@@ -113,18 +107,56 @@ function App() {
             }
         });
 
-        return () => {
-            unsub();
-        };
-    }, [dispatch, webAppData]);
+        return () => unsub();
+    }, [dispatch, webApp]);
 
     useEffect(() => {
-        if (webAppData.id) {
+        if (webApp.id) {
             getUser();
         }
-    }, [dispatch, webAppData, getUser]);
+    }, [getUser]);
 
-    // Fetch top users from Firestore
+    useEffect(() => {
+        if (typeof window.Telegram !== "undefined" && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+
+            if (tg?.initDataUnsafe?.user?.id) {
+                setWebApp({
+                    id: tg.initDataUnsafe.user.id.toString(),
+                    firstName: tg.initDataUnsafe.user.first_name,
+                    lastName: tg.initDataUnsafe.user.last_name,
+                    username: tg.initDataUnsafe.user.username,
+                    languageCode: tg.initDataUnsafe.user.language_code,
+                });
+
+                tg.expand();
+                tg.setBackgroundColor("#0b0b0b");
+                tg.setHeaderColor("#0b0b0b");
+            } else {
+                setWebApp({
+                    id: "82424881123",
+                    firstName: "FirstName",
+                    lastName: null,
+                    username: "@username",
+                    languageCode: "en",
+                });
+            }
+        } else {
+            console.error("Telegram WebApp API is not available in this environment.");
+        }
+    }, []);
+
+    const location = useLocation();
+    const pageTitles = {
+        "/": "Home",
+        "/airdrop": "AirDrop",
+        "/earn": "Earn",
+        "/daily": "Daily",
+        "/referrals": "Referrals",
+    };
+    const getPageTitle = () => pageTitles[location.pathname] || "React App";
+
     useEffect(() => {
         const fetchTopUsers = async () => {
             try {
@@ -147,86 +179,72 @@ function App() {
         fetchTopUsers();
     }, [dispatch]);
 
-    // Show message using toast
     useEffect(() => {
         if (message) {
             toast(message.message, {
                 autoClose: 2500,
                 closeOnClick: true,
                 pauseOnHover: true,
-                draggable: false,
+                draggable: true,
+                closeButton: false,
             });
             dispatch(setShowMessage(null));
         }
     }, [message, dispatch]);
 
-    // Initialize WebApp
-    useEffect(() => {
-        if (typeof window.Telegram !== "undefined" && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
-            tg.ready();
-
-            if (tg?.initDataUnsafe?.user?.id) {
-                const userId = tg.initDataUnsafe.user.id;
-                const userIdString = userId.toString();
-
-                setWebAppData({
-                    id: userIdString,
-                    firstname: tg?.initDataUnsafe?.user?.first_name,
-                    lastname: tg?.initDataUnsafe?.user?.last_name,
-                    username: tg?.initDataUnsafe?.user?.username,
-                    languageCode: tg?.initDataUnsafe?.user?.language_code,
-                });
-
-                tg.expand();
-                tg.setBackgroundColor("#0b0b0b");
-                tg.setHeaderColor("#0b0b0b");
-            } else {
-                setWebAppData({
-                    id: "82424881123",
-                    firstname: "Firstname",
-                    lastname: null,
-                    username: "@username",
-                    languageCode: "en",
-                });
-            }
-        } else {
-            console.error("Telegram WebApp API is not available in this environment.");
-        }
-    }, []);
-
-    const location = useLocation();
-
-    // Set page title dynamically based on route
-    const pageTitles = {
-        "/": "Home",
-        "/airdrop": "AirDrop",
-        "/earn": "Earn",
-        "/daily": "Daily",
-        "/referrals": "Referrals",
-    };
-
-    const getPageTitle = () => pageTitles[location.pathname] || "React App";
-
     return (
-        <div className="flex flex-col h-screen">
-            <Helmet>
-                <title>{getPageTitle()}</title>
-            </Helmet>
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/airdrop" element={<AirDrop />} />
-                <Route path="/earn" element={<Earn />} />
-                <Route path="/daily" element={<Daily/>} />
-                <Route path="/referrals" element={<Referrals />} />
-            </Routes>
-            <BottomNavigation webAppData={webAppData} />
-            
-            {/* Add the MiningButton component here */}
-            <MiningButton />
+        <>
+            {user && <BottomNavigation />}
 
-            <ToastContainer /> {/* Keep ToastContainer here for notifications */}
-        </div>
+            {/* Balance and Upgrade Button */}
+            {user && (
+                <>
+                    <div className="absolute top-5 left-5 text-white">
+                        <span>Balance: ₿ {user.balance}</span>
+                    </div>
+
+                    {/* Upgrade button logic */}
+                    <MiningButton />
+
+                    <CalculateNums />
+                    <ToastContainer
+                        style={{
+                            width: "calc(100% - 40px)",
+                            maxWidth: "none",
+                            left: "20px",
+                            right: "20px",
+                            top: "20px",
+                            height: "20px",
+                        }}
+                        toastStyle={{
+                            minHeight: "20px",
+                            padding: "0px 10px",
+                            paddingBottom: "4px",
+                            backgroundColor:
+                                message?.setHeaderColor === "green"
+                                    ? "#00C000"
+                                    : message?.setHeaderColor === "blue"
+                                    ? "#1d4ed8"
+                                    : "red",
+                            color: "white",
+                            borderRadius: "6px",
+                            marginBottom: "4px",
+                        }}
+                    />
+                    <CoinAnimation showAnimation={coinShow} />
+                </>
+            )}
+
+            <Routes>
+                <Route path="/mining" element={<MiningButton />} />
+                <Route path="*" element={<Loading />} />
+                <Route path="/" element={<Home />} />
+                {user && <Route path="/daily" element={<Daily />} />}
+                {user && <Route path="/earn" element={<Earn />} />}
+                {user && <Route path="/referrals" element={<Referrals />} />}
+                {user && <Route path="/airdrop" element={<AirDrop />} />}
+            </Routes>
+        </>
     );
 }
 
