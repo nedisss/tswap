@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "tswap": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
