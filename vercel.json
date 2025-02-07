@@ -2,8 +2,8 @@
   "version": 2,
   "routes": [
     {
-      "tswap": "/(.*)",
-      "dest": "/index.html"
+      "src": "/(.*)",
+      "dest": "/public/index.html"
     }
   ]
 }
