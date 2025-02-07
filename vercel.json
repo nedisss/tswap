@@ -1,9 +1,13 @@
 {
   "version": 2,
-  "routes": [
+  "builds": [
     {
-      "src": "/(.*)",
-      "dest": "/public/index.html"
+      "tswap": "public/index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "tswap": "public/favicon.ico",
+      "use": "@vercel/static"
     }
   ]
 }
