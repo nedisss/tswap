@@ -41,7 +41,7 @@ export const userSlice = createSlice({
     },
 });
 
-export const { setUser, setBalance, setMiningStatus, setMiningStartTime } = userSlice.actions;
+export const { setUser, setbalance, setMiningStatus, setMiningStartTime } = userSlice.actions;
 
 export const selectUser = (state) => state.user.value;
 

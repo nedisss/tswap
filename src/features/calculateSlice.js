@@ -7,7 +7,7 @@ const initialState = {
 export const calculateSlice = createSlice({
     name: "calculate",
     initialState,
-    reducers: {
+    reducers:{
         setCalculated: (state, action) => {
             state.value = action.payload;
         },
